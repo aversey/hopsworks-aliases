@@ -131,6 +131,7 @@ class build_aliases(Command):
         self.aliases_dir = Path(self.build_temp) / "aliases"
 
     def run(self) -> None:
+        print("Building aliases...")
         assert self.aliases_dir is not None
 
         generate_aliases(Path(), self.aliases_dir)
@@ -144,7 +145,7 @@ class install_aliases(Command):
         pass
 
     def run(self) -> None:
-        pass
+        print("Installing aliases...")
 
 
 def finalize_distribution_options(dist: Distribution) -> None:
