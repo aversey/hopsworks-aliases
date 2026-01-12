@@ -2,8 +2,6 @@
 name = "hopsworks-aliases"
 version = "1.0.0"
 
-dependencies = ["gitignorefile"]
-
 [dependency-groups]
 dev = ["ruff", "pyright", "setuptools"]
 
