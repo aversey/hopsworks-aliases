@@ -71,9 +71,6 @@ def collect_aliases(root):
         except Exception:
             continue
 
-
-    raise Exception(f"Modules to scan: {all_modules_to_scan}")
-
     # Scan all modules for @public decorators
     aliases_by_module = defaultdict(list)
     for module in all_modules_to_scan:
