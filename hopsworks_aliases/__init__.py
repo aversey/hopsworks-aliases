@@ -92,6 +92,8 @@ def _collect_submodules(obj):
 def _scan_module_for_public_decorators(module, aliases_by_module):
     """Scan a module for @public decorators and collect the metadata."""
     for member_name, member in module.members.items():
+        if member.is_alias:
+            continue
         if not hasattr(member, "decorators"):
             continue
 
