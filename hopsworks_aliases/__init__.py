@@ -56,6 +56,7 @@ def collect_imports(root):
 
 def collect_aliases(root):
     for import_str in collect_imports(root):
+        raise Exception(f"Importing {import_str} for aliases collection, {Path().resolve().as_posix()=}, {root.resolve().as_posix()=}, {SOURCES=}, {collect_imports(root)=}")
         importlib.import_module(import_str, package=".")
     aliases = importlib.import_module("hopsworks.internal.aliases", package=".")
     return aliases.Registry.get_modules()
