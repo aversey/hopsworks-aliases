@@ -1,0 +1,112 @@
+[project]
+name = "hopsworks-aliases"
+version = "1.0.0"
+
+dependencies = ["gitignorefile"]
+
+[dependency-groups]
+dev = ["ruff", "pyright", "setuptools"]
+
+[project.entry-points."distutils.commands"]
+build_aliases = "aliases:build_aliases"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "java",
+    "transformation_test_helper.py", # File excluded from ruff formatting to maintain formatting required for tests
+]
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.9+ syntax.
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "B",
+    "C4",
+    "ISC",
+    "PIE",
+    "PYI",
+    "Q",
+    "RSE",
+    "RET",
+    "SIM",
+    "TC",
+    "I",
+    "W",
+    "D2",
+    "D3",
+    "D4",
+    "INP",
+    "UP",
+    "FA",
+]
+ignore = [
+    "B905", # zip has no strict kwarg until Python 3.10
+    "W505", # Doc line too long
+    "E501", # Line too long
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+known-third-party = ["hopsworks", "hsfs", "hsml", "hopsworks_common"]
+
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
