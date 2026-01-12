@@ -20,7 +20,7 @@ import importlib
 from pathlib import Path
 
 import gitignorefile
-from setuptools import Command
+from setuptools import Command, Distribution
 
 
 SOURCES = [
@@ -134,3 +134,23 @@ class build_aliases(Command):
         assert self.aliases_dir is not None
 
         generate_aliases(Path(), self.aliases_dir)
+
+
+class install_aliases(Command):
+    def initialize_options(self) -> None:
+        pass
+
+    def finalize_options(self) -> None:
+        pass
+
+    def run(self) -> None:
+        pass
+
+
+def finalize_distribution_options(dist: Distribution) -> None:
+    dist.get_command_class("build").sub_commands.append(
+        (build_aliases.__name__, None),
+    )
+    dist.get_command_class("install").sub_commands.append(
+        (install_aliases.__name__, None),
+    )

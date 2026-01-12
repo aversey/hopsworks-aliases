@@ -7,8 +7,12 @@ dependencies = ["gitignorefile"]
 [dependency-groups]
 dev = ["ruff", "pyright", "setuptools"]
 
+[project.entry-points."setuptools.finalize_distribution_options"]
+finalize_distribution_options_aliases = "hopsworks_aliases:finalize_distribution_options"
+
 [project.entry-points."distutils.commands"]
-build_aliases = "aliases:build_aliases"
+build_aliases = "hopsworks_aliases:build_aliases"
+install_aliases = "hopsworks_aliases:install_aliases"
 
 [build-system]
 requires = ["setuptools"]
