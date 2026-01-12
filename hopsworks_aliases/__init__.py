@@ -237,7 +237,6 @@ def collect_managed(root):
 
 def generate_aliases(source_root, destination_root):
     managed = collect_managed(source_root)
-    raise Exception(f"Generated aliases: {managed}")
     for filepath, content in managed.items():
         filepath: Path
         filepath = destination_root / filepath.relative_to(source_root)
