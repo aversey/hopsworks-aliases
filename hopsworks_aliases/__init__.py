@@ -120,7 +120,6 @@ class build_aliases(Command):
         self.aliases_dir = Path(self.build_temp) / "aliases"
 
     def run(self) -> None:
-        raise Exception(f"{Path().resolve().as_posix()=}, {self.build_temp=}")
         assert self.aliases_dir is not None
 
         generate_aliases(Path(), self.aliases_dir)
