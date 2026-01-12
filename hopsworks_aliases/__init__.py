@@ -52,12 +52,22 @@ def collect_aliases(root):
     # Load the package using griffe
     loader = griffe.GriffeLoader(search_paths=[str(root)])
 
+    # Discover all Python files
+    python_files = _discover_python_modules(root)
+
+    # Collect all top-level packages
+    top_level_packages = set()
+    for py_file in python_files:
+        if len(py_file.parts) > 0:
+            top_level_packages.add(py_file.parts[0])
+
     # Load all top-level packages with submodules
     all_modules_to_scan = []
-    for python_file in sorted(_discover_python_modules(root)):
+    for package_name in sorted(top_level_packages):
         try:
-            package = loader.load(python_file, submodules=True)
+            package = loader.load(package_name, submodules=True)
             all_modules_to_scan.append(package)
+            all_modules_to_scan.extend(_collect_submodules(package))
         except Exception:
             continue
 
@@ -67,6 +77,16 @@ def collect_aliases(root):
         _scan_module_for_public_decorators(module, aliases_by_module)
 
     return dict(aliases_by_module)
+
+
+def _collect_submodules(obj):
+    """Recursively collect all submodules."""
+    submodules = []
+    for member in obj.members.values():
+        if member.kind.value == "module" and member.parent == obj:
+            submodules.append(member)
+            submodules.extend(_collect_submodules(member))
+    return submodules
 
 
 def _scan_module_for_public_decorators(module, aliases_by_module):
