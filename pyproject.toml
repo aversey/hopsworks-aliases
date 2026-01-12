@@ -1,6 +1,7 @@
 [project]
 name = "hopsworks-aliases"
 version = "1.0.0"
+dependencies = ["griffe"]
 
 [dependency-groups]
 dev = ["ruff", "pyright", "setuptools"]
