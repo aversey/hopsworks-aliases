@@ -16,6 +16,8 @@
 
 """Scripts for automatic management of aliases."""
 
+import os
+import shutil
 from collections import defaultdict
 from pathlib import Path
 
@@ -263,13 +265,36 @@ class build_aliases(Command):
 
 class install_aliases(Command):
     def initialize_options(self) -> None:
-        pass
+        self.aliases_dir: Path | None = None
+        self.install_lib: str | None = None
 
     def finalize_options(self) -> None:
-        pass
+        self.set_undefined_options(
+            "build_aliases",
+            ("aliases_dir", "aliases_dir"),
+        )
+        self.set_undefined_options(
+            "install",
+            ("install_lib", "install_lib"),
+        )
 
     def run(self) -> None:
-        pass
+        assert self.aliases_dir is not None
+        assert self.install_lib is not None
+
+        # Copy all generated files from build/aliases to install_lib
+        if not self.aliases_dir.exists():
+            return
+
+        for src_file in self.aliases_dir.rglob("*.py"):
+            rel_path = src_file.relative_to(self.aliases_dir)
+            dest_file = Path(self.install_lib) / rel_path
+
+            # Create parent directories if needed
+            dest_file.parent.mkdir(parents=True, exist_ok=True)
+
+            # Copy the file
+            shutil.copy(src_file, dest_file)
 
 
 def finalize_distribution_options(dist: Distribution) -> None:
