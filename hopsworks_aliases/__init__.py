@@ -131,7 +131,7 @@ class build_aliases(Command):
         self.aliases_dir = Path(self.build_temp) / "aliases"
 
     def run(self) -> None:
-        print("Building aliases...")
+        raise Exception(f"{Path().resolve().as_posix()=}, {self.build_temp=}")
         assert self.aliases_dir is not None
 
         generate_aliases(Path(), self.aliases_dir)
@@ -145,7 +145,7 @@ class install_aliases(Command):
         pass
 
     def run(self) -> None:
-        print("Installing aliases...")
+        pass
 
 
 def finalize_distribution_options(dist: Distribution) -> None:
