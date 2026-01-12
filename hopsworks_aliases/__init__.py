@@ -83,7 +83,7 @@ def _collect_submodules(obj):
     """Recursively collect all submodules."""
     submodules = []
     for member in obj.members.values():
-        if member.kind.value == "module" and member.parent == obj:
+        if member.kind.value == "module" and not member.is_alias:
             submodules.append(member)
             submodules.extend(_collect_submodules(member))
     return submodules
