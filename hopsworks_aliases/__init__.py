@@ -210,9 +210,9 @@ def collect_managed(root):
             # Wrap with deprecation decorator if needed
             if metadata["deprecated_by"]:
                 # Import deprecation helper if not already imported
-                if "hopsworks.internal.aliases" not in imported_modules:
-                    managed[module_file] += "import hopsworks.internal.aliases\n"
-                    imported_modules.add("hopsworks.internal.aliases")
+                if "hopsworks_common.internal.aliases" not in imported_modules:
+                    managed[module_file] += "import hopsworks_common.internal.aliases\n"
+                    imported_modules.add("hopsworks_common.internal.aliases")
 
                 # Convert deprecated_by to sorted list
                 deprecated_by_list = list(metadata["deprecated_by"])
@@ -226,7 +226,7 @@ def collect_managed(root):
                     )
 
                 original_ref = (
-                    f"hopsworks.internal.aliases.deprecated("
+                    f"hopsworks_common.internal.aliases.deprecated("
                     f"{deprecated_by_str}{available_until_str})({original_ref})"
                 )
 
