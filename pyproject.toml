@@ -1,17 +1,19 @@
 [project]
 name = "hopsworks-aliases"
 version = "1.0.0"
-dependencies = ["griffe"]
+
+[project.optional-dependencies]
+all = ["griffe"]
 
 [dependency-groups]
 dev = ["ruff", "pyright", "setuptools"]
 
 [project.entry-points."setuptools.finalize_distribution_options"]
-finalize_distribution_options_aliases = "hopsworks_aliases:finalize_distribution_options"
+finalize_distribution_options_aliases = "hopsworks_aliases.plugin:finalize_distribution_options"
 
 [project.entry-points."distutils.commands"]
-build_aliases = "hopsworks_aliases:build_aliases"
-install_aliases = "hopsworks_aliases:install_aliases"
+build_aliases = "hopsworks_aliases.plugin:build_aliases"
+install_aliases = "hopsworks_aliases.plugin:install_aliases"
 
 [build-system]
 requires = ["setuptools"]
