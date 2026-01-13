@@ -16,6 +16,7 @@
 
 """Scripts for automatic management of aliases."""
 
+import contextlib
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -179,8 +180,9 @@ def generate_aliases(source_root, destination_root):
         parent = filepath.parent
         while not parent.exists():
             # Collect gitignore entry relative to destination_root
-            rel_path = parent.relative_to(destination_root)
-            gitignore_entries.append(f"/{rel_path}")
+            with contextlib.suppress(ValueError):
+                rel_path = parent.relative_to(destination_root)
+                gitignore_entries.append(f"/{rel_path}")
             parent = parent.parent
         filepath.parent.mkdir(parents=True, exist_ok=True)
         filepath.touch()
