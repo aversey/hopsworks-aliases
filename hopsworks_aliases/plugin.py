@@ -34,7 +34,6 @@ def _discover_python_modules(root):
     """
     python_files = []
 
-    deleted = set()
     for py_file in root.rglob("*.py"):
         py_file: Path = py_file.relative_to(root)
         # Skip files in common non-source directories
@@ -44,14 +43,10 @@ def _discover_python_modules(root):
         ):
             continue
 
-        if any(part in deleted for part in py_file.parts):
-            continue
-
         if py_file.name == "__init__.py" and py_file.read_text().startswith(
             HopsworksAliases.MAGIC_COMMENT
         ):
-            py_file.parent.unlink()
-            deleted.add(py_file.parent)
+            py_file.unlink()
             continue
 
         python_files.append(py_file)
