@@ -27,7 +27,7 @@ from hopsworks_aliases import HopsworksAliasesError
 from hopsworks_aliases.extension import HopsworksAliases
 
 
-def _discover_python_modules(root, clear: bool = False):
+def _discover_python_modules(root):
     """Discover all Python modules in the root directory.
 
     Returns a list of module paths relative to root.
@@ -46,8 +46,7 @@ def _discover_python_modules(root, clear: bool = False):
         if py_file.name == "__init__.py" and py_file.read_text().startswith(
             HopsworksAliases.MAGIC_COMMENT
         ):
-            if clear:
-                py_file.unlink()
+            py_file.unlink()
             continue
 
         python_files.append(py_file)
@@ -55,7 +54,7 @@ def _discover_python_modules(root, clear: bool = False):
     return python_files
 
 
-def collect_aliases(root, clear: bool = False):
+def collect_aliases(root):
     """Collect all @public decorators from the source files.
 
     Returns a dict mapping module paths to lists of (from_module, item_name, metadata) tuples.
@@ -66,7 +65,7 @@ def collect_aliases(root, clear: bool = False):
     loader = griffe.GriffeLoader(extensions=exts, search_paths=[str(root)])
 
     # Discover all Python files
-    python_files = _discover_python_modules(root, clear)
+    python_files = _discover_python_modules(root)
 
     # Collect all top-level packages
     top_level_packages = set()
@@ -76,8 +75,9 @@ def collect_aliases(root, clear: bool = False):
 
     # Load all top-level packages with submodules
     all_modules_to_scan = set()
-    package = loader.load(root, submodules=True)
-    _collect_with_submodules(package, all_modules_to_scan)
+    for package_name in sorted(top_level_packages):
+        package = loader.load(package_name, submodules=True)
+        _collect_with_submodules(package, all_modules_to_scan)
 
     # Collect aliases
     aliases_by_module = defaultdict(list)
@@ -99,13 +99,13 @@ def _collect_with_submodules(obj, all_modules_to_scan):
             _collect_with_submodules(submodule, all_modules_to_scan)
 
 
-def collect_managed(root, clear: bool = False):
+def collect_managed(root):
     """Generate the content for alias __init__.py files.
 
     Returns a dict mapping file paths to their generated content.
     """
     managed = {}
-    for target_module, alias_list in collect_aliases(root, clear).items():
+    for target_module, alias_list in collect_aliases(root).items():
         # Convert module path to file path
         module_file = root / target_module.replace(".", "/") / "__init__.py"
 
@@ -170,7 +170,7 @@ def collect_managed(root, clear: bool = False):
 
 
 def generate_aliases(source_root, destination_root):
-    managed = collect_managed(source_root, clear=True)
+    managed = collect_managed(source_root)
     gitignore_entries = []
 
     for filepath, content in managed.items():
@@ -196,6 +196,8 @@ def generate_aliases(source_root, destination_root):
         gitignore_content += "".join(str(x) + "\n" for x in sorted(gitignore_entries))
         gitignore_path.write_text(gitignore_content)
 
+    return managed
+
 
 class build_aliases(Command):
     def initialize_options(self) -> None:
@@ -217,23 +219,16 @@ class build_aliases(Command):
     def run(self) -> None:
         assert self.aliases_dir is not None
 
-        generate_aliases(Path(), self.aliases_dir)
-
-    def get_source_files(self) -> list[str]:
-        """Return all source files that are inputs to this command."""
-        # All Python files in the source tree are potential sources
-        python_files = _discover_python_modules(Path())
-        return [str(f) for f in python_files]
+        self.managed = generate_aliases(Path(), self.aliases_dir)
 
     def get_outputs(self) -> list[str]:
         """Return all files that are outputs of this command."""
         assert self.aliases_dir is not None
 
         # Collect what would be generated without actually generating
-        managed = collect_managed(Path())
         outputs = []
 
-        for filepath in managed:
+        for filepath in self.managed:
             output_path = self.aliases_dir / filepath.relative_to(Path())
             outputs.append(str(output_path))
 
@@ -244,10 +239,9 @@ class build_aliases(Command):
         assert self.aliases_dir is not None
 
         # For each generated file, map it to itself in the destination
-        managed = collect_managed(Path())
         mapping = {}
 
-        for filepath in managed:
+        for filepath in self.managed:
             output_path = self.aliases_dir / filepath.relative_to(Path())
             mapping[str(output_path)] = str(output_path)
 
