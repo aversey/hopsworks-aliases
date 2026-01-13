@@ -256,7 +256,11 @@ def generate_aliases(source_root, destination_root):
     # Generate single .gitignore at the root
     if gitignore_entries:
         gitignore_path = destination_root / ".gitignore"
-        gitignore_content = "# Ignore generated alias files\n" + "\n".join(sorted(gitignore_entries)) + "\n"
+        if gitignore_path.exists():
+            gitignore_content = gitignore_path.read_text()
+        else:
+            gitignore_content = "# Ignore generated alias files\n"
+        gitignore_content += "".join(str(x) + "\n" for x in sorted(gitignore_entries))
         gitignore_path.write_text(gitignore_content)
 
 
