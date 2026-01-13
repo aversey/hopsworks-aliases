@@ -16,7 +16,6 @@
 
 """Scripts for automatic management of aliases."""
 
-import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -245,6 +244,11 @@ def generate_aliases(source_root, destination_root):
         filepath.parent.mkdir(parents=True, exist_ok=True)
         filepath.touch()
         filepath.write_text(content)
+
+        # Generate .gitignore to ignore the generated __init__.py
+        gitignore_path = filepath.parent / ".gitignore"
+        gitignore_content = "# Ignore generated alias file\n__init__.py\n"
+        gitignore_path.write_text(gitignore_content)
 
 
 class build_aliases(Command):
