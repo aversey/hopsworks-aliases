@@ -22,8 +22,6 @@ import functools
 import inspect
 import warnings
 
-from .extension import HopsworksAliases as HopsworksAliases
-
 
 class HopsworksAliasesError(Exception):
     """Internal hopsworks exception related to aliases.
