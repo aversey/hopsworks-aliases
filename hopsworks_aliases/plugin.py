@@ -89,7 +89,8 @@ def _collect_with_submodules(obj, all_modules_to_scan):
     """Recursively collect all submodules."""
     if obj.kind.value == "module" and not obj.is_alias:
         all_modules_to_scan.add(obj)
-        _collect_with_submodules(obj, all_modules_to_scan)
+        for submodule in obj.members.values():
+            _collect_with_submodules(submodule, all_modules_to_scan)
 
 
 def collect_managed(root):
