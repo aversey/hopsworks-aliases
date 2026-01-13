@@ -251,16 +251,57 @@ class build_aliases(Command):
     def initialize_options(self) -> None:
         self.build_temp: str | None = None
         self.aliases_dir: Path | None = None
+        self.editable_mode: bool = False
 
     def finalize_options(self) -> None:
         self.set_undefined_options("build", ("build_temp", "build_temp"))
         assert self.build_temp is not None
-        self.aliases_dir = Path(self.build_temp) / "aliases"
+
+        # In editable mode, generate files in place
+        # Otherwise, generate in build directory
+        if self.editable_mode:
+            self.aliases_dir = Path()
+        else:
+            self.aliases_dir = Path(self.build_temp) / "aliases"
 
     def run(self) -> None:
         assert self.aliases_dir is not None
 
         generate_aliases(Path(), self.aliases_dir)
+
+    def get_source_files(self) -> list[str]:
+        """Return all source files that are inputs to this command."""
+        # All Python files in the source tree are potential sources
+        python_files = _discover_python_modules(Path())
+        return [str(f) for f in python_files]
+
+    def get_outputs(self) -> list[str]:
+        """Return all files that are outputs of this command."""
+        assert self.aliases_dir is not None
+
+        # Collect what would be generated without actually generating
+        managed = collect_managed(Path())
+        outputs = []
+
+        for filepath in managed:
+            output_path = self.aliases_dir / filepath.relative_to(Path())
+            outputs.append(str(output_path))
+
+        return outputs
+
+    def get_output_mapping(self) -> dict[str, str]:
+        """Map destination files to source files."""
+        assert self.aliases_dir is not None
+
+        # For each generated file, map it to itself in the destination
+        managed = collect_managed(Path())
+        mapping = {}
+
+        for filepath in managed:
+            output_path = self.aliases_dir / filepath.relative_to(Path())
+            mapping[str(output_path)] = str(output_path)
+
+        return mapping
 
 
 class install_aliases(Command):
