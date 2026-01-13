@@ -189,7 +189,7 @@ def generate_aliases(source_root, destination_root):
                 rel_path = d.relative_to(destination_root)
                 gitignore_entries.append(f"/{rel_path}")
             d.mkdir()
-            (d / "__init__.py").touch()
+            (d / "__init__.py").write_text(HopsworksAliases.MAGIC_COMMENT)
 
         filepath.write_text(content)
 
