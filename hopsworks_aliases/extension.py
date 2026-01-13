@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import griffe
-
-
-if TYPE_CHECKING:
-    import ast
 
 
 logger = griffe.get_logger(__name__)
@@ -23,23 +19,13 @@ class HopsworksAliases(griffe.Extension):
     def __init__(self, object_paths: list[str] | None = None) -> None:
         self.object_paths = object_paths
 
-    def on_class_instance(
-        self,
-        *,
-        node: ast.AST | griffe.ObjectNode,
-        cls: griffe.Class,
-        agent: griffe.Visitor | griffe.Inspector,
-        **kwargs: Any,
+    def on_class(
+        self, *, cls: griffe.Class, loader: griffe.GriffeLoader, **kwargs: Any
     ) -> None:
         self._on_decoratable(cls)
 
-    def on_function_instance(
-        self,
-        *,
-        node: ast.AST | griffe.ObjectNode,
-        func: griffe.Function,
-        agent: griffe.Visitor | griffe.Inspector,
-        **kwargs: Any,
+    def on_function(
+        self, *, func: griffe.Function, loader: griffe.GriffeLoader, **kwargs: Any
     ) -> None:
         self._on_decoratable(func)
 
