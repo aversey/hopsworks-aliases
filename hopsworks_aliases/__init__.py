@@ -194,7 +194,7 @@ def collect_managed(root):
             if alias_name in declared_names:
                 raise Exception(
                     f"Error: {original_ref} is attempted to be exported as {alias_name} "
-                    f"in {module_file}, but the package already contains this alias, set to {declared_names[alias_name]}."
+                    f"in {target_module}, but the package already contains this alias, set to {declared_names[alias_name]}."
                 )
 
             declared_names[alias_name] = original_ref
