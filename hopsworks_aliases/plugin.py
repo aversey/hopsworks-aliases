@@ -177,15 +177,20 @@ def generate_aliases(source_root, destination_root):
     for filepath, content in managed.items():
         filepath: Path
         filepath = destination_root / filepath.relative_to(source_root)
+
         parent = filepath.parent
+        to_be_created = []
         while not parent.exists():
-            # Collect gitignore entry relative to destination_root
-            with contextlib.suppress(ValueError):
-                rel_path = parent.relative_to(destination_root)
-                gitignore_entries.append(f"/{rel_path}")
+            to_be_created.append(parent)
             parent = parent.parent
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-        filepath.touch()
+
+        for d in reversed(to_be_created):
+            with contextlib.suppress(ValueError):
+                rel_path = d.relative_to(destination_root)
+                gitignore_entries.append(f"/{rel_path}")
+            d.mkdir()
+            (d / "__init__.py").touch()
+
         filepath.write_text(content)
 
     # Generate single .gitignore at the root
