@@ -27,7 +27,7 @@ from hopsworks_aliases import HopsworksAliasesError
 from hopsworks_aliases.extension import HopsworksAliases
 
 
-def _discover_python_modules(root):
+def _discover_python_modules(root, clear: bool = False):
     """Discover all Python modules in the root directory.
 
     Returns a list of module paths relative to root.
@@ -46,7 +46,8 @@ def _discover_python_modules(root):
         if py_file.name == "__init__.py" and py_file.read_text().startswith(
             HopsworksAliases.MAGIC_COMMENT
         ):
-            py_file.unlink()
+            if clear:
+                py_file.unlink()
             continue
 
         python_files.append(py_file)
@@ -54,7 +55,7 @@ def _discover_python_modules(root):
     return python_files
 
 
-def collect_aliases(root):
+def collect_aliases(root, clear: bool = False):
     """Collect all @public decorators from the source files.
 
     Returns a dict mapping module paths to lists of (from_module, item_name, metadata) tuples.
@@ -65,7 +66,7 @@ def collect_aliases(root):
     loader = griffe.GriffeLoader(extensions=exts, search_paths=[str(root)])
 
     # Discover all Python files
-    python_files = _discover_python_modules(root)
+    python_files = _discover_python_modules(root, clear)
 
     # Collect all top-level packages
     top_level_packages = set()
@@ -99,13 +100,13 @@ def _collect_with_submodules(obj, all_modules_to_scan):
             _collect_with_submodules(submodule, all_modules_to_scan)
 
 
-def collect_managed(root):
+def collect_managed(root, clear: bool = False):
     """Generate the content for alias __init__.py files.
 
     Returns a dict mapping file paths to their generated content.
     """
     managed = {}
-    for target_module, alias_list in collect_aliases(root).items():
+    for target_module, alias_list in collect_aliases(root, clear).items():
         # Convert module path to file path
         module_file = root / target_module.replace(".", "/") / "__init__.py"
 
@@ -170,7 +171,7 @@ def collect_managed(root):
 
 
 def generate_aliases(source_root, destination_root):
-    managed = collect_managed(source_root)
+    managed = collect_managed(source_root, clear=True)
     gitignore_entries = []
 
     for filepath, content in managed.items():
