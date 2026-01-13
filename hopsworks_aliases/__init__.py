@@ -238,6 +238,8 @@ def collect_managed(root):
 
 def generate_aliases(source_root, destination_root):
     managed = collect_managed(source_root)
+    gitignore_entries = []
+
     for filepath, content in managed.items():
         filepath: Path
         filepath = destination_root / filepath.relative_to(source_root)
@@ -245,9 +247,14 @@ def generate_aliases(source_root, destination_root):
         filepath.touch()
         filepath.write_text(content)
 
-        # Generate .gitignore to ignore the generated __init__.py
-        gitignore_path = filepath.parent / ".gitignore"
-        gitignore_content = "# Ignore generated alias file\n__init__.py\n"
+        # Collect gitignore entry relative to destination_root
+        rel_path = filepath.relative_to(destination_root)
+        gitignore_entries.append(f"/{rel_path}")
+
+    # Generate single .gitignore at the root
+    if gitignore_entries:
+        gitignore_path = destination_root / ".gitignore"
+        gitignore_content = "# Ignore generated alias files\n" + "\n".join(sorted(gitignore_entries)) + "\n"
         gitignore_path.write_text(gitignore_content)
 
 
