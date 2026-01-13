@@ -34,16 +34,27 @@ def _discover_python_modules(root):
     """
     python_files = []
 
+    deleted = set()
     for py_file in root.rglob("*.py"):
+        py_file: Path = py_file.relative_to(root)
         # Skip files in common non-source directories
         if any(
-            part.startswith(".")
-            or part in {"__pycache__", "build", "dist", "venv", ".venv"}
-            for part in py_file.relative_to(root).parts
+            part.startswith(".") or part in {"__pycache__", "build", "dist", "venv"}
+            for part in py_file.parts
         ):
             continue
 
-        python_files.append(py_file.relative_to(root))
+        if any(part in deleted for part in py_file.parts):
+            continue
+
+        if py_file.name == "__init__.py" and py_file.read_text().startswith(
+            HopsworksAliases.MAGIC_COMMENT
+        ):
+            py_file.parent.unlink()
+            deleted.add(py_file.parent)
+            continue
+
+        python_files.append(py_file)
 
     return python_files
 
@@ -104,15 +115,10 @@ def collect_managed(root):
         module_file = root / target_module.replace(".", "/") / "__init__.py"
 
         # Start with header
-        managed[module_file] = "# This file is generated. Do not edit it manually!\n"
+        managed[module_file] = HopsworksAliases.MAGIC_COMMENT
 
         # Sort for determinism
-        alias_list.sort(
-            key=lambda x: (
-                x.hopsworks_aliases["from_module"],
-                x.hopsworks_aliases["object_name"],
-            )
-        )
+        alias_list.sort(key=lambda x: (x["from_module"], x["object_name"]))
 
         imported_modules = set()
         declared_names = {}
