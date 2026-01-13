@@ -182,30 +182,27 @@ def collect_managed(root):
         alias_list.sort(key=lambda x: (x[0], x[1]))
 
         imported_modules = set()
-        declared_names = set()
+        declared_names = {}
 
         for from_module, item_name, metadata in alias_list:
             # Determine the alias name
             alias_name = metadata["as_alias"] if metadata["as_alias"] else item_name
 
+            original_ref = f"{from_module}.{item_name}"
+
             # Check for duplicates
             if alias_name in declared_names:
-                original_ref = f"{from_module}.{item_name}"
-                print(
+                raise Exception(
                     f"Error: {original_ref} is attempted to be exported as {alias_name} "
-                    f"in {module_file}, but the package already contains this alias."
+                    f"in {module_file}, but the package already contains this alias, set to {declared_names[alias_name]}."
                 )
-                exit(1)
 
-            declared_names.add(alias_name)
+            declared_names[alias_name] = original_ref
 
             # Import the source module if needed
             if from_module not in imported_modules:
                 managed[module_file] += f"import {from_module}\n"
                 imported_modules.add(from_module)
-
-            # Build the assignment
-            original_ref = f"{from_module}.{item_name}"
 
             # Wrap with deprecation decorator if needed
             if metadata["deprecated_by"]:
