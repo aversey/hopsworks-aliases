@@ -88,7 +88,7 @@ def collect_aliases(root):
 def _collect_with_submodules(obj, all_modules_to_scan):
     """Recursively collect all submodules."""
     if obj.kind.value == "module" and not obj.is_alias:
-        all_modules_to_scan.append(obj)
+        all_modules_to_scan.add(obj)
         _collect_with_submodules(obj, all_modules_to_scan)
 
 
