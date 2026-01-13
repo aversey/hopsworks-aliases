@@ -1,0 +1,155 @@
+from __future__ import annotations
+
+from typing import Any
+
+import griffe
+
+
+logger = griffe.get_logger(__name__)
+
+
+class HopsworksAliases(griffe.Extension):
+    def __init__(self, object_paths: list[str] | None = None) -> None:
+        self.object_paths = object_paths
+
+    def on_class(
+        self, *, cls: griffe.Class, loader: griffe.GriffeLoader, **kwargs: Any
+    ) -> None:
+        self._on_decoratable(cls)
+
+    def on_function(
+        self, *, function: griffe.Function, loader: griffe.GriffeLoader, **kwargs: Any
+    ) -> None:
+        self._on_decoratable(function)
+
+    def _on_decoratable(self, decoratable: griffe.Class | griffe.Function):
+        if decoratable.is_alias:
+            return
+
+        if not hasattr(decoratable, "decorators") or not decoratable.decorators:
+            return
+
+        decoratable.hopsworks_aliases = {  # type: ignore
+            "is_public": False,
+            "aliases": [],
+            "deprecated": None,
+        }
+
+        deprecated = [
+            decorator
+            for decorator in decoratable.decorators
+            if decorator.callable_path == "hopsworks_aliases.deprecated"
+        ]
+        if deprecated:
+            decoratable.hopsworks_aliases["deprecated"] = _parse_deprecated_decorator(  # type: ignore
+                deprecated[0]
+            )
+            if len(deprecated) > 1:
+                logger.warning(
+                    f"Multiple @deprecated decorators found on {decoratable.path}; only the first one is considered."
+                )
+
+        publics = [
+            decorator
+            for decorator in decoratable.decorators
+            if decorator.callable_path == "hopsworks_aliases.public"
+        ]
+        if publics:
+            decoratable.hopsworks_aliases["aliases"] = []  # type: ignore
+            decoratable.hopsworks_aliases["is_public"] = True  # type: ignore
+
+        for public in publics:
+            alias = _parse_public_decorator(public)
+            alias["from_module"] = decoratable.module.path
+            alias["object_name"] = decoratable.name
+            decoratable.hopsworks_aliases["aliases"].append(alias)  # type: ignore
+
+
+def _parse_public_decorator(decorator) -> dict:
+    """Parse a @public decorator call and extract paths and keyword arguments.
+
+    Returns dict with 'paths', 'as_alias', 'deprecated_by', 'available_until'.
+    """
+    if not isinstance(decorator.value, griffe.ExprCall):
+        return {}
+
+    expr = decorator.value
+
+    # Extract positional arguments (paths)
+    paths = []
+    for arg in expr.arguments:
+        if isinstance(arg, str):
+            # It's a string literal
+            paths.append(arg.strip("'\""))
+
+    # Extract keyword arguments
+    kwargs: dict[str, str | set[str] | None] = {
+        "as_alias": None,
+        "deprecated_by": None,
+        "available_until": None,
+    }
+
+    for arg in expr.arguments:
+        if isinstance(arg, griffe.ExprKeyword):
+            key = arg.name
+            value = arg.value
+
+            # Convert the value to a Python object
+            if isinstance(value, str):
+                # String literal
+                kwargs[key] = value.strip("'\"")
+            elif hasattr(value, "elements"):
+                # It's a set/list (ExprSet)
+                elements = getattr(value, "elements", [])
+                kwargs[key] = {
+                    elem.strip("'\"") for elem in elements if isinstance(elem, str)
+                }
+
+    return {
+        "paths": paths,
+        **kwargs,
+    }
+
+
+def _parse_deprecated_decorator(decorator) -> dict:
+    """Parse a @deprecated decorator call and extract paths and keyword arguments.
+
+    Returns dict with 'deprecated_by', 'available_until'.
+    """
+    if not isinstance(decorator.value, griffe.ExprCall):
+        return {}
+
+    expr = decorator.value
+
+    # Extract positional arguments (deprecated_by)
+    deprecated_by = []
+    for arg in expr.arguments:
+        if isinstance(arg, str):
+            # It's a string literal
+            deprecated_by.append(arg.strip("'\""))
+
+    # Extract keyword arguments
+    kwargs: dict[str, str | set[str] | None] = {
+        "available_until": None,
+    }
+
+    for arg in expr.arguments:
+        if isinstance(arg, griffe.ExprKeyword):
+            key = arg.name
+            value = arg.value
+
+            # Convert the value to a Python object
+            if isinstance(value, str):
+                # String literal
+                kwargs[key] = value.strip("'\"")
+            elif hasattr(value, "elements"):
+                # It's a set/list (ExprSet)
+                elements = getattr(value, "elements", [])
+                kwargs[key] = {
+                    elem.strip("'\"") for elem in elements if isinstance(elem, str)
+                }
+
+    return {
+        "deprecated_by": deprecated_by,
+        **kwargs,
+    }

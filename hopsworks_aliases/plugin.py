@@ -24,6 +24,7 @@ import griffe
 from setuptools import Command, Distribution
 
 from hopsworks_aliases import HopsworksAliasesError
+from hopsworks_aliases.extension import HopsworksAliases
 
 
 def _discover_python_modules(root):
@@ -53,7 +54,9 @@ def collect_aliases(root):
     Returns a dict mapping module paths to lists of (from_module, item_name, metadata) tuples.
     """
     # Load the package using griffe
-    loader = griffe.GriffeLoader(search_paths=[str(root)])
+    exts = griffe.Extensions()
+    exts.add(HopsworksAliases())
+    loader = griffe.GriffeLoader(extensions=exts, search_paths=[str(root)])
 
     # Discover all Python files
     python_files = _discover_python_modules(root)
@@ -65,103 +68,28 @@ def collect_aliases(root):
             top_level_packages.add(py_file.parts[0])
 
     # Load all top-level packages with submodules
-    all_modules_to_scan = []
+    all_modules_to_scan = set()
     for package_name in sorted(top_level_packages):
-        try:
-            package = loader.load(package_name, submodules=True)
-            all_modules_to_scan.append(package)
-            all_modules_to_scan.extend(_collect_submodules(package))
-        except Exception:
-            continue
+        package = loader.load(package_name, submodules=True)
+        _collect_with_submodules(package, all_modules_to_scan)
 
-    # Scan all modules for @public decorators
+    # Collect aliases
     aliases_by_module = defaultdict(list)
     for module in all_modules_to_scan:
-        _scan_module_for_public_decorators(module, aliases_by_module)
+        for member in module.members.values():
+            if hasattr(member, "hopsworks_aliases"):
+                for alias in member.hopsworks_aliases["aliases"]:
+                    for target_module in alias["paths"]:
+                        aliases_by_module[target_module].append(alias)
 
     return dict(aliases_by_module)
 
 
-def _collect_submodules(obj):
+def _collect_with_submodules(obj, all_modules_to_scan):
     """Recursively collect all submodules."""
-    submodules = []
-    for member in obj.members.values():
-        if member.kind.value == "module" and not member.is_alias:
-            submodules.append(member)
-            submodules.extend(_collect_submodules(member))
-    return submodules
-
-
-def _scan_module_for_public_decorators(module, aliases_by_module):
-    """Scan a module for @public decorators and collect the metadata."""
-    for member_name, member in module.members.items():
-        if member.is_alias:
-            continue
-        if not hasattr(member, "decorators"):
-            continue
-
-        for decorator in member.decorators:
-            # Check if this is a @public decorator
-            if decorator.callable_path and decorator.callable_path.endswith(".public"):
-                # Parse decorator arguments
-                metadata = _parse_public_decorator(decorator)
-                if metadata and metadata["paths"]:
-                    # Store the full path to the decorated object
-                    from_module = str(module.canonical_path)
-
-                    for target_module in metadata["paths"]:
-                        aliases_by_module[target_module].append(
-                            (from_module, member_name, metadata)
-                        )
-
-
-def _parse_public_decorator(decorator):
-    """Parse a @public decorator call and extract paths and keyword arguments.
-
-    Returns dict with 'paths', 'as_alias', 'deprecated_by', 'available_until'.
-    """
-    if not isinstance(decorator.value, griffe.ExprCall):
-        return None
-
-    expr = decorator.value
-
-    # Extract positional arguments (paths)
-    paths = []
-    for arg in expr.arguments:
-        if isinstance(arg, str):
-            # It's a string literal
-            paths.append(arg.strip("'\""))
-        elif hasattr(arg, "name"):
-            # It's an ExprKeyword, skip it
-            pass
-
-    # Extract keyword arguments
-    kwargs: dict[str, str | set[str] | None] = {
-        "as_alias": None,
-        "deprecated_by": None,
-        "available_until": None,
-    }
-
-    for arg in expr.arguments:
-        if isinstance(arg, griffe.ExprKeyword):
-            key = arg.name
-            value = arg.value
-
-            # Convert the value to a Python object
-            if isinstance(value, str):
-                # String literal
-                kwargs[key] = value.strip("'\"")
-            elif hasattr(value, "elements"):
-                # It's a set/list (ExprSet)
-                elements = getattr(value, "elements", [])
-                kwargs[key] = {
-                    elem.strip("'\"") for elem in elements if isinstance(elem, str)
-                }
-
-    return {
-        "paths": paths,
-        **kwargs,
-    }
+    if obj.kind.value == "module" and not obj.is_alias:
+        all_modules_to_scan.append(obj)
+        _collect_with_submodules(obj, all_modules_to_scan)
 
 
 def collect_managed(root):
@@ -177,20 +105,24 @@ def collect_managed(root):
         # Start with header
         managed[module_file] = "# This file is generated. Do not edit it manually!\n"
 
-        if not alias_list:
-            continue
-
         # Sort for determinism
-        alias_list.sort(key=lambda x: (x[0], x[1]))
+        alias_list.sort(
+            key=lambda x: (
+                x.hopsworks_aliases["from_module"],
+                x.hopsworks_aliases["object_name"],
+            )
+        )
 
         imported_modules = set()
         declared_names = {}
 
-        for from_module, item_name, metadata in alias_list:
+        for alias in alias_list:
             # Determine the alias name
-            alias_name = metadata["as_alias"] if metadata["as_alias"] else item_name
+            alias_name = (
+                alias["as_alias"] if alias["as_alias"] else alias["object_name"]
+            )
 
-            original_ref = f"{from_module}.{item_name}"
+            original_ref = f"{alias['from_module']}.{alias['object_name']}"
 
             # Check for duplicates
             if alias_name in declared_names:
@@ -202,26 +134,26 @@ def collect_managed(root):
             declared_names[alias_name] = original_ref
 
             # Import the source module if needed
-            if from_module not in imported_modules:
-                managed[module_file] += f"import {from_module}\n"
-                imported_modules.add(from_module)
+            if alias["from_module"] not in imported_modules:
+                managed[module_file] += f"import {alias['from_module']}\n"
+                imported_modules.add(alias["from_module"])
 
             # Wrap with deprecation decorator if needed
-            if metadata["deprecated_by"]:
+            if alias["deprecated_by"]:
                 # Import deprecation helper if not already imported
                 if "hopsworks_aliases" not in imported_modules:
                     managed[module_file] += "import hopsworks_aliases\n"
                     imported_modules.add("hopsworks_aliases")
 
                 # Convert deprecated_by to sorted list
-                deprecated_by_list = list(metadata["deprecated_by"])
+                deprecated_by_list = list(alias["deprecated_by"])
                 deprecated_by_list.sort()
                 deprecated_by_str = ", ".join(f'"{s}"' for s in deprecated_by_list)
 
                 available_until_str = ""
-                if metadata["available_until"]:
+                if alias["available_until"]:
                     available_until_str = (
-                        f', available_until="{metadata["available_until"]}"'
+                        f', available_until="{alias["available_until"]}"'
                     )
 
                 original_ref = (
