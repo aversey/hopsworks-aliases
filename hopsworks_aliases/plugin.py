@@ -76,9 +76,8 @@ def collect_aliases(root, clear: bool = False):
 
     # Load all top-level packages with submodules
     all_modules_to_scan = set()
-    for package_name in sorted(top_level_packages):
-        package = loader.load(package_name, submodules=True)
-        _collect_with_submodules(package, all_modules_to_scan)
+    package = loader.load(root, submodules=True)
+    _collect_with_submodules(package, all_modules_to_scan)
 
     # Collect aliases
     aliases_by_module = defaultdict(list)
