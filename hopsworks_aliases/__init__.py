@@ -243,13 +243,15 @@ def generate_aliases(source_root, destination_root):
     for filepath, content in managed.items():
         filepath: Path
         filepath = destination_root / filepath.relative_to(source_root)
+        parent = filepath.parent
+        while not parent.exists():
+            # Collect gitignore entry relative to destination_root
+            rel_path = parent.relative_to(destination_root)
+            gitignore_entries.append(f"/{rel_path}")
+            parent = parent.parent
         filepath.parent.mkdir(parents=True, exist_ok=True)
         filepath.touch()
         filepath.write_text(content)
-
-        # Collect gitignore entry relative to destination_root
-        rel_path = filepath.relative_to(destination_root)
-        gitignore_entries.append(f"/{rel_path}")
 
     # Generate single .gitignore at the root
     if gitignore_entries:
