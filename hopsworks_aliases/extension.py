@@ -12,12 +12,12 @@ class HopsworksAliases(griffe.Extension):
     def __init__(self, object_paths: list[str] | None = None) -> None:
         self.object_paths = object_paths
 
-    def on_class(
+    def on_class_instance(
         self, *, cls: griffe.Class, loader: griffe.GriffeLoader, **kwargs: Any
     ) -> None:
         self._on_decoratable(cls)
 
-    def on_function(
+    def on_function_instance(
         self, *, function: griffe.Function, loader: griffe.GriffeLoader, **kwargs: Any
     ) -> None:
         self._on_decoratable(function)
