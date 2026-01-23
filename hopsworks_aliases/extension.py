@@ -30,6 +30,8 @@ class HopsworksAliases(griffe.Extension):
         self._on_decoratable(func)
 
     def _on_decoratable(self, decoratable: griffe.Class | griffe.Function):
+        decoratable.public = False
+
         if decoratable.is_alias:
             return
 
@@ -64,6 +66,7 @@ class HopsworksAliases(griffe.Extension):
         if publics:
             decoratable.hopsworks_aliases["aliases"] = []  # type: ignore
             decoratable.hopsworks_aliases["is_public"] = True  # type: ignore
+            decoratable.public = True
 
         for public in publics:
             alias = _parse_public_decorator(public)
