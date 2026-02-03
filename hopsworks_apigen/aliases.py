@@ -19,6 +19,10 @@ from __future__ import annotations
 from typing import Callable, overload
 
 
+class PublicNames:
+    nameOf: dict[object, str] = {}
+
+
 @overload
 def public(*paths: str) -> Callable[[object], object]: ...
 @overload
@@ -72,9 +76,12 @@ def public(*paths: str | object):
         return paths[0]
 
     def publicate(symbol: object):
-        setattr(
-            symbol, "__hopsworks_api_management_public_name", paths[0] if paths else ""
-        )
+        name = paths[0] if paths else ""
+        if not isinstance(name, str):
+            raise TypeError(
+                "The primary public path must be a string representing an import path."
+            )
+        PublicNames.nameOf[symbol] = name
         return symbol
 
     return publicate

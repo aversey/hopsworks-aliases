@@ -20,6 +20,7 @@ import functools
 import inspect
 import warnings
 
+from hopsworks_apigen.aliases import PublicNames
 from hopsworks_apigen.errors import (
     HopsworksApigenError,
     HopsworksDeprecationWarning,
@@ -54,8 +55,8 @@ def deprecated(
 
     def deprecate(symbol: object):
         name = public_name
-        if not name and hasattr(symbol, "__hopsworks_api_management_public_name"):
-            name = symbol.__hopsworks_api_management_public_name # type: ignore
+        if not name:
+            name = PublicNames.nameOf[symbol]  # type: ignore
         if not name:
             name = symbol.__qualname__
 
