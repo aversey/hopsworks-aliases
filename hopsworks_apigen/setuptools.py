@@ -1,5 +1,5 @@
 #
-#   Copyright 2025 Hopsworks AB
+#   Copyright 2026 Hopsworks AB
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ from pathlib import Path
 import griffe
 from setuptools import Command, Distribution
 
-from hopsworks_aliases import HopsworksAliasesError
-from hopsworks_aliases.extension import HopsworksAliases
+from hopsworks_apigen import HopsworksApigenError
+from hopsworks_apigen.griffe import HopsworksApigenGriffe
 
 
 def _discover_python_modules(root):
@@ -45,7 +45,7 @@ def _discover_python_modules(root):
             continue
 
         if py_file.name == "__init__.py" and py_file.read_text().startswith(
-            HopsworksAliases.MAGIC_COMMENT
+            HopsworksApigenGriffe.MAGIC_COMMENT
         ):
             py_file.unlink()
             continue
@@ -62,7 +62,7 @@ def collect_aliases(root):
     """
     # Load the package using griffe
     exts = griffe.Extensions()
-    exts.add(HopsworksAliases())
+    exts.add(HopsworksApigenGriffe())
     loader = griffe.GriffeLoader(extensions=exts, search_paths=[str(root)])
 
     # Discover all Python files
@@ -84,10 +84,9 @@ def collect_aliases(root):
     aliases_by_module = defaultdict(list)
     for module in all_modules_to_scan:
         for member in module.members.values():
-            if hasattr(member, "hopsworks_aliases"):
-                for alias in member.hopsworks_aliases["aliases"]:
-                    for target_module in alias["paths"]:
-                        aliases_by_module[target_module].append(alias)
+            if hasattr(member, "hopsworks_apigen"):
+                for alias in member.hopsworks_apigen["aliases"]:
+                    aliases_by_module[alias["target_module"]].append(alias)
 
     return dict(aliases_by_module)
 
@@ -111,25 +110,23 @@ def collect_managed(root):
         module_file = root / target_module.replace(".", "/") / "__init__.py"
 
         # Start with header
-        managed[module_file] = HopsworksAliases.MAGIC_COMMENT
+        managed[module_file] = HopsworksApigenGriffe.MAGIC_COMMENT
 
         # Sort for determinism
-        alias_list.sort(key=lambda x: (x["from_module"], x["object_name"]))
+        alias_list.sort(
+            key=lambda x: (x["from_module"], x["object_name"], x["alias_name"])
+        )
 
         imported_modules = set()
         declared_names = {}
 
         for alias in alias_list:
-            # Determine the alias name
-            alias_name = (
-                alias["as_alias"] if alias["as_alias"] else alias["object_name"]
-            )
-
+            alias_name = alias["alias_name"]
             original_ref = f"{alias['from_module']}.{alias['object_name']}"
 
             # Check for duplicates
             if alias_name in declared_names:
-                raise HopsworksAliasesError(
+                raise HopsworksApigenError(
                     f"Error: {original_ref} is attempted to be exported as {alias_name} "
                     f"in {target_module}, but the package already contains this alias, set to {declared_names[alias_name]}."
                 )
@@ -140,29 +137,6 @@ def collect_managed(root):
             if alias["from_module"] not in imported_modules:
                 managed[module_file] += f"import {alias['from_module']}\n"
                 imported_modules.add(alias["from_module"])
-
-            # Wrap with deprecation decorator if needed
-            if alias["deprecated_by"]:
-                # Import deprecation helper if not already imported
-                if "hopsworks_aliases" not in imported_modules:
-                    managed[module_file] += "import hopsworks_aliases\n"
-                    imported_modules.add("hopsworks_aliases")
-
-                # Convert deprecated_by to sorted list
-                deprecated_by_list = list(alias["deprecated_by"])
-                deprecated_by_list.sort()
-                deprecated_by_str = ", ".join(f'"{s}"' for s in deprecated_by_list)
-
-                available_until_str = ""
-                if alias["available_until"]:
-                    available_until_str = (
-                        f', available_until="{alias["available_until"]}"'
-                    )
-
-                original_ref = (
-                    f"hopsworks_aliases.deprecated("
-                    f"{deprecated_by_str}{available_until_str})({original_ref})"
-                )
 
             # Add the assignment
             managed[module_file] += f"{alias_name} = {original_ref}\n"
@@ -189,7 +163,7 @@ def generate_aliases(source_root, destination_root):
                 rel_path = d.relative_to(destination_root)
                 gitignore_entries.append(f"/{rel_path}")
             d.mkdir()
-            (d / "__init__.py").write_text(HopsworksAliases.MAGIC_COMMENT)
+            (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
 
         filepath.write_text(content)
 

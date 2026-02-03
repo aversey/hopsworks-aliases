@@ -1,19 +1,21 @@
 [project]
-name = "hopsworks-aliases"
+name = "hopsworks-apigen"
 version = "1.0.0"
 
 [project.optional-dependencies]
 build = ["griffe"]
 
 [dependency-groups]
-dev = ["ruff", "pyright", "setuptools"]
+dev = ["ruff", "pyright", "setuptools", "mkdocs"]
 
 [project.entry-points."setuptools.finalize_distribution_options"]
-finalize_distribution_options_aliases = "hopsworks_aliases.plugin:finalize_distribution_options"
+finalize_distribution_options_aliases = "hopsworks_apigen.setuptools:finalize_distribution_options"
 
 [project.entry-points."distutils.commands"]
-build_aliases = "hopsworks_aliases.plugin:build_aliases"
-install_aliases = "hopsworks_aliases.plugin:install_aliases"
+build_aliases = "hopsworks_apigen.setuptools:build_aliases"
+install_aliases = "hopsworks_apigen.setuptools:install_aliases"
+[project.entry-points."mkdocs.plugins"]
+hopsworks-apigen = "hopsworks_apigen.mkdocs:HopsworksApigenMkDocs"
 
 [build-system]
 requires = ["setuptools"]
