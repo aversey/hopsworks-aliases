@@ -16,7 +16,13 @@
 
 from __future__ import annotations
 
+from typing import Callable, overload
 
+
+@overload
+def public(symbol: object, /) -> object: ...
+@overload
+def public(*paths: str) -> Callable[[object], object]: ...
 def public(*paths: str | object):
     """Make a function or class publicly available, possibly via an alias.
 
