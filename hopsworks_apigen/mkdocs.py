@@ -119,7 +119,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
 
             for submodule in self._walk_modules(module):
                 for member in submodule.members.values():
-                    logger.debug("Examining member %r", member)
+                    logger.debug("Examining member %r of %r", member, submodule)
                     if isinstance(member, griffe.Alias):
                         continue
                     if isinstance(member, (griffe.Class, griffe.Function)):
