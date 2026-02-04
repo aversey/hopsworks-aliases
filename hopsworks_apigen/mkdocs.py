@@ -165,6 +165,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
             "heading_level": 1,
             "show_root_heading": True,
             "members": False,
+            "show_root_full_path": True,
         }
         module_options_str = indent(yaml.dump({"options": module_options}), "    ")
         lines = [
