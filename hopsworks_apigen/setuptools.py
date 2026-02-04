@@ -151,10 +151,10 @@ def generate_aliases(source_root, destination_root):
     managed, source_files = collect_managed(source_root)
     gitignore_entries = []
 
-    print(f"Source files: {source_files}")
     for filepath, content in managed.items():
         filepath: Path
-        filepath = destination_root / filepath.relative_to(source_root)
+        source_filepath = filepath.relative_to(source_root)
+        filepath = destination_root / source_filepath
 
         parent = filepath.parent
         to_be_created = []
@@ -167,27 +167,24 @@ def generate_aliases(source_root, destination_root):
                 rel_path = d.relative_to(destination_root)
                 gitignore_entries.append(f"/{rel_path}")
 
-            py_file = d.parent / (d.name + ".py")
-            print(f"Checking for conflict: {py_file}")
-            if py_file in source_files:
-                raise HopsworksApigenError(
-                    f"Cannot create package directory {d} for aliases because a module with the same name exists at {py_file}."
-                )
+                py_file = rel_path.parent / (rel_path.name + ".py")
+                if py_file in source_files:
+                    raise HopsworksApigenError(
+                        f"Cannot create package directory {d} for aliases because a module with the same name exists at {py_file}."
+                    )
 
-            d.mkdir()
+                d.mkdir()
 
-            init_file = d / "__init__.py"
-            print(f"Checking for conflict: {init_file}")
-            if init_file in source_files:
-                continue
+                init_file = rel_path / "__init__.py"
+                if init_file in source_files:
+                    continue
 
-            (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
+                (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
 
-        print(f"Checking for conflict: {filepath}")
-        if filepath in source_files:
+        if source_filepath in source_files:
             if content != HopsworksApigenGriffe.MAGIC_COMMENT:
                 raise HopsworksApigenError(
-                    f"Cannot create alias file {filepath} because a source file with the same name exists."
+                    f"Cannot create alias file {source_filepath} because a source file with the same name exists."
                 )
             continue
         filepath.write_text(content)
