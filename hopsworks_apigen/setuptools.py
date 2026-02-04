@@ -151,6 +151,7 @@ def generate_aliases(source_root, destination_root):
     managed, source_files = collect_managed(source_root)
     gitignore_entries = []
 
+    print(f"Source files: {source_files}")
     for filepath, content in managed.items():
         filepath: Path
         filepath = destination_root / filepath.relative_to(source_root)
@@ -167,6 +168,7 @@ def generate_aliases(source_root, destination_root):
                 gitignore_entries.append(f"/{rel_path}")
 
             py_file = d.parent / (d.name + ".py")
+            print(f"Checking for conflict: {py_file}")
             if py_file in source_files:
                 raise HopsworksApigenError(
                     f"Cannot create package directory {d} for aliases because a module with the same name exists at {py_file}."
@@ -175,11 +177,13 @@ def generate_aliases(source_root, destination_root):
             d.mkdir()
 
             init_file = d / "__init__.py"
+            print(f"Checking for conflict: {init_file}")
             if init_file in source_files:
                 continue
 
             (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
 
+        print(f"Checking for conflict: {filepath}")
         if filepath in source_files:
             if content != HopsworksApigenGriffe.MAGIC_COMMENT:
                 raise HopsworksApigenError(
