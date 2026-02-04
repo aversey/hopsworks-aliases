@@ -67,8 +67,8 @@ class HopsworksApigenGriffe(griffe.Extension):
             if decorator.callable_path == "hopsworks_apigen.deprecated"
         ]
         if deprecated:
-            decoratable.extra["hopsworks_apigen"]["deprecated"] = _parse_deprecated_decorator(
-                deprecated[0]
+            decoratable.extra["hopsworks_apigen"]["deprecated"] = (
+                _parse_deprecated_decorator(deprecated[0])
             )
             if len(deprecated) > 1:
                 logger.warning(
