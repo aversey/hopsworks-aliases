@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from textwrap import dedent, indent
+from textwrap import indent
 from typing import TYPE_CHECKING, cast
 
 import griffe
@@ -60,6 +60,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
     """MkDocs plugin that documents modules containing @public entities."""
 
     nav: _NavNode
+    objects_by_module: dict[str, list[str]]
 
     def on_config(self, config: MkDocsConfig) -> MkDocsConfig | None:
         """Ensure mkdocstrings is available."""
@@ -75,13 +76,17 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
                     break
 
         self.nav = _NavNode(title=self.config.nav_section_title)
+        self.objects_by_module = {}
         return None
 
     def on_files(self, files: Files, /, *, config: MkDocsConfig) -> None:
         """Generate virtual doc files for modules with @public entities."""
-        for module_path in self._collect_public_modules():
+        self._collect_public_objects()
+
+        for module_path in sorted(self.objects_by_module):
+            object_paths = sorted(self.objects_by_module[module_path])
             docs_path = self._module_doc_path(module_path)
-            content = self._module_markdown(module_path)
+            content = self._module_markdown(module_path, object_paths)
 
             logger.info("Documenting module %r at %s", module_path, docs_path)
 
@@ -95,11 +100,9 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
         if cfg_nav := config.nav:
             _merge_nav(cfg_nav, self.config.nav_section_title, self.nav.as_list())
 
-    def _collect_public_modules(self) -> Iterator[str]:
-        """Load modules with griffe and yield primary public modules."""
+    def _collect_public_objects(self) -> None:
+        """Load modules with griffe and populate objects_by_module."""
         loader = griffe.GriffeLoader(extensions=griffe.Extensions(HopsworksApigenGriffe()))
-
-        primary_modules: set[str] = set()
 
         for module_name in self.config.modules:
             try:
@@ -115,9 +118,11 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
                     if isinstance(member, (griffe.Class, griffe.Function)):
                         info = getattr(member, "hopsworks_apigen", None)
                         if info and info.get("is_public"):
-                            primary_modules.add(self._primary_module(member))
-
-        yield from primary_modules
+                            primary_mod = self._primary_module(member)
+                            object_path = f"{member.module.path}.{member.name}"
+                            if primary_mod not in self.objects_by_module:
+                                self.objects_by_module[primary_mod] = []
+                            self.objects_by_module[primary_mod].append(object_path)
 
     def _walk_modules(self, module: griffe.Module) -> Iterator[griffe.Module]:
         """Recursively yield all modules."""
@@ -149,20 +154,20 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
         parts = module_path.split(".")
         return f"{self.config.api_root_uri}/{'/'.join(parts)}.md"
 
-    def _module_markdown(self, module_path: str) -> str:
+    def _module_markdown(self, module_path: str, object_paths: list[str]) -> str:
         """Generate markdown content for a module's doc page."""
         options = {"heading_level": 1, "show_root_heading": True}
-        options_str = yaml.dump({"options": options}, default_flow_style=False)
+        options_str = indent(
+            yaml.dump({"options": options}, default_flow_style=False), "    "
+        )
 
         name = module_path.rsplit(".", 1)[-1]
-        md = f"""
-        ---
-        title: {name}
-        ---
+        lines = [f"---\ntitle: {name}\n---\n"]
 
-        ::: {module_path}
-        """
-        return dedent(md).lstrip() + indent(options_str, "    ")
+        for object_path in object_paths:
+            lines.append(f"::: {object_path}\n{options_str}")
+
+        return "\n".join(lines)
 
 
 @dataclass
