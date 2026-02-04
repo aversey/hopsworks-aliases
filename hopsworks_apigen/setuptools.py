@@ -84,9 +84,9 @@ def collect_aliases(root):
     aliases_by_module = defaultdict(list)
     for module in all_modules_to_scan:
         for member in module.members.values():
-            if hasattr(member, "hopsworks_apigen"):
-                for alias in member.hopsworks_apigen["aliases"]:
-                    aliases_by_module[alias["target_module"]].append(alias)
+            ha = member.extra.get("hopsworks_apigen", {"aliases": []})
+            for alias in ha["aliases"]:
+                aliases_by_module[alias["target_module"]].append(alias)
 
     return dict(aliases_by_module)
 

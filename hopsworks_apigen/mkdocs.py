@@ -118,8 +118,8 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
                     if isinstance(member, griffe.Alias):
                         continue
                     if isinstance(member, (griffe.Class, griffe.Function)):
-                        info = getattr(member, "hopsworks_apigen", None)
-                        if info and info.get("is_public"):
+                        info = member.extra.get("hopsworks_apigen")
+                        if info and info["is_public"]:
                             primary_mod = self._primary_module(member)
                             object_path = f"{member.module.path}.{member.name}"
                             if primary_mod not in self.objects_by_module:
@@ -138,15 +138,14 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
     def _primary_module(self, member: griffe.Class | griffe.Function) -> str:
         """Determine the primary public module for a member.
 
-        The primary module is the module part of the first path in @public(),
-        or the declaring module if no explicit paths are given.
+        The primary module is the module part of the first path in @public(), or the declaring module if no explicit paths are given.
         """
-        info = getattr(member, "hopsworks_apigen", None)
+        info = member.extra.get("hopsworks_apigen")
         if info:
-            aliases = info.get("aliases", [])
+            aliases = info["aliases"]
             if aliases:
                 target = aliases[0]["target_module"]
-                # Empty target means declaring module
+                # Empty target means we are publishing in the declaring module
                 if target:
                     return target
         return member.module.path

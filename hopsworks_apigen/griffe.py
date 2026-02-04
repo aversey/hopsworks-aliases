@@ -54,7 +54,7 @@ class HopsworksApigenGriffe(griffe.Extension):
         if not hasattr(decoratable, "decorators") or not decoratable.decorators:
             return
 
-        decoratable.hopsworks_apigen = {  # type: ignore
+        decoratable.extra["hopsworks_apigen"] = {
             "is_public": False,
             "aliases": [],
             "deprecated": None,
@@ -67,7 +67,7 @@ class HopsworksApigenGriffe(griffe.Extension):
             if decorator.callable_path == "hopsworks_apigen.deprecated"
         ]
         if deprecated:
-            decoratable.hopsworks_apigen["deprecated"] = _parse_deprecated_decorator(  # type: ignore
+            decoratable.extra["hopsworks_apigen"]["deprecated"] = _parse_deprecated_decorator(
                 deprecated[0]
             )
             if len(deprecated) > 1:
@@ -82,11 +82,11 @@ class HopsworksApigenGriffe(griffe.Extension):
             if decorator.callable_path == "hopsworks_apigen.public"
         ]
         if publics:
-            decoratable.hopsworks_apigen["is_public"] = True  # type: ignore
+            decoratable.extra["hopsworks_apigen"]["is_public"] = True
             decoratable.public = True
             paths = _extract_paths(publics[0])
             for target_module, alias_name in _parse_paths(paths):
-                decoratable.hopsworks_apigen["aliases"].append(  # type: ignore
+                decoratable.extra["hopsworks_apigen"]["aliases"].append(
                     {
                         "target_module": target_module,
                         "alias_name": alias_name,
@@ -113,7 +113,7 @@ class HopsworksApigenGriffe(griffe.Extension):
                 for p in paths
             ]
             for target_module, alias_name in _parse_paths(paths):
-                decoratable.hopsworks_apigen["aliases"].append(  # type: ignore
+                decoratable.extra["hopsworks_apigen"]["aliases"].append(
                     {
                         "target_module": target_module,
                         "alias_name": alias_name,
