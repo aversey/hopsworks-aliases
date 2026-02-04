@@ -102,7 +102,9 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
 
     def _collect_public_objects(self) -> None:
         """Load modules with griffe and populate objects_by_module."""
-        loader = griffe.GriffeLoader(extensions=griffe.Extensions(HopsworksApigenGriffe()))
+        loader = griffe.GriffeLoader(
+            extensions=griffe.Extensions(HopsworksApigenGriffe())
+        )
 
         for module_name in self.config.modules:
             try:
@@ -157,12 +159,18 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
     def _module_markdown(self, module_path: str, object_paths: list[str]) -> str:
         """Generate markdown content for a module's doc page."""
         options = {"heading_level": 2, "show_root_heading": True}
-        options_str = indent(
-            yaml.dump({"options": options}, default_flow_style=False), "    "
-        )
+        options_str = indent(yaml.dump({"options": options}), "    ")
 
-        name = module_path.rsplit(".", 1)[-1]
-        lines = [f"---\ntitle: {name}\n---\n", f"# {module_path}\n"]
+        module_options = {
+            "heading_level": 1,
+            "show_root_heading": True,
+            "members": False,
+        }
+        module_options_str = indent(yaml.dump({"options": module_options}), "    ")
+        lines = [
+            f"---\ntitle: {module_path}\n---\n",
+            f"::: {module_path}\n{module_options_str}",
+        ]
 
         for object_path in object_paths:
             lines.append(f"::: {object_path}\n{options_str}")
