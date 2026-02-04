@@ -90,7 +90,7 @@ def collect_aliases(root):
             for alias in ha["aliases"]:
                 aliases_by_module[alias["target_module"]].append(alias)
 
-    return dict(aliases_by_module)
+    return dict(aliases_by_module), python_files
 
 
 def _collect_with_submodules(obj, all_modules_to_scan):
@@ -107,7 +107,9 @@ def collect_managed(root):
     Returns a dict mapping file paths to their generated content.
     """
     managed = {}
-    for target_module, alias_list in collect_aliases(root).items():
+    aliases_by_module, source_files = collect_aliases(root)
+    print(source_files)
+    for target_module, alias_list in aliases_by_module.items():
         # Convert module path to file path
         module_file = root / target_module.replace(".", "/") / "__init__.py"
 
