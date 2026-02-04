@@ -156,13 +156,13 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
 
     def _module_markdown(self, module_path: str, object_paths: list[str]) -> str:
         """Generate markdown content for a module's doc page."""
-        options = {"heading_level": 1, "show_root_heading": True}
+        options = {"heading_level": 2, "show_root_heading": True}
         options_str = indent(
             yaml.dump({"options": options}, default_flow_style=False), "    "
         )
 
         name = module_path.rsplit(".", 1)[-1]
-        lines = [f"---\ntitle: {name}\n---\n"]
+        lines = [f"---\ntitle: {name}\n---\n", f"# {module_path}\n"]
 
         for object_path in object_paths:
             lines.append(f"::: {object_path}\n{options_str}")
