@@ -96,8 +96,10 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
             _merge_nav(cfg_nav, self.config.nav_section_title, self.nav.as_list())
 
     def _collect_public_modules(self) -> Iterator[str]:
-        """Load modules with griffe and yield paths of modules containing public entities."""
+        """Load modules with griffe and yield primary public modules."""
         loader = griffe.GriffeLoader(extensions=griffe.Extensions(HopsworksApigenGriffe()))
+
+        primary_modules: set[str] = set()
 
         for module_name in self.config.modules:
             try:
@@ -106,29 +108,41 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
                 logger.warning("Failed to load module %r: %s", module_name, e)
                 continue
 
-            yield from self._walk_for_public_modules(cast("griffe.Module", module))
+            for submodule in self._walk_modules(cast("griffe.Module", module)):
+                for member in submodule.members.values():
+                    if isinstance(member, griffe.Alias):
+                        continue
+                    if isinstance(member, (griffe.Class, griffe.Function)):
+                        info = getattr(member, "hopsworks_apigen", None)
+                        if info and info.get("is_public"):
+                            primary_modules.add(self._primary_module(member))
 
-    def _walk_for_public_modules(self, module: griffe.Module) -> Iterator[str]:
-        """Recursively find modules that contain public entities."""
-        if self._has_public_members(module):
-            yield module.path
+        yield from primary_modules
 
+    def _walk_modules(self, module: griffe.Module) -> Iterator[griffe.Module]:
+        """Recursively yield all modules."""
+        yield module
         for member in module.members.values():
             if isinstance(member, griffe.Alias):
                 continue
             if isinstance(member, griffe.Module):
-                yield from self._walk_for_public_modules(member)
+                yield from self._walk_modules(member)
 
-    def _has_public_members(self, module: griffe.Module) -> bool:
-        """Check if module has any direct public members (classes or functions)."""
-        for member in module.members.values():
-            if isinstance(member, griffe.Alias):
-                continue
-            if isinstance(member, (griffe.Class, griffe.Function)):
-                info = getattr(member, "hopsworks_apigen", None)
-                if info and info.get("is_public"):
-                    return True
-        return False
+    def _primary_module(self, member: griffe.Class | griffe.Function) -> str:
+        """Determine the primary public module for a member.
+
+        The primary module is the module part of the first path in @public(),
+        or the declaring module if no explicit paths are given.
+        """
+        info = getattr(member, "hopsworks_apigen", None)
+        if info:
+            aliases = info.get("aliases", [])
+            if aliases:
+                target = aliases[0]["target_module"]
+                # Empty target means declaring module
+                if target:
+                    return target
+        return member.module.path
 
     def _module_doc_path(self, module_path: str) -> str:
         """Compute the docs file path for a module."""

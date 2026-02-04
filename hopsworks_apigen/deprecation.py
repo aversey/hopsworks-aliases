@@ -56,7 +56,7 @@ def deprecated(
     def deprecate(symbol: object):
         name = public_name
         if not name:
-            name = PublicNames.nameOf[symbol]  # type: ignore
+            name = PublicNames.nameOf.get(symbol)
         if not name:
             name = symbol.__qualname__
 
