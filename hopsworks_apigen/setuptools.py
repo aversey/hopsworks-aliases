@@ -33,7 +33,7 @@ def _discover_python_modules(root):
 
     Returns a list of module paths relative to root.
     """
-    python_files = []
+    python_files: list[Path] = []
 
     for py_file in root.rglob("*.py"):
         py_file: Path = py_file.relative_to(root)
@@ -106,7 +106,7 @@ def collect_managed(root):
 
     Returns a dict mapping file paths to their generated content.
     """
-    managed = {}
+    managed: dict[Path, str] = {}
     aliases_by_module, source_files = collect_aliases(root)
     for target_module, alias_list in aliases_by_module.items():
         # Convert module path to file path
@@ -151,13 +151,14 @@ def generate_aliases(source_root, destination_root):
     managed, source_files = collect_managed(source_root)
     gitignore_entries = []
 
+    print("source_files", source_files)
     for filepath, content in managed.items():
         filepath: Path
         source_filepath = filepath.relative_to(source_root)
         filepath = destination_root / source_filepath
 
         parent = filepath.parent
-        to_be_created = []
+        to_be_created: list[Path] = []
         while not parent.exists():
             to_be_created.append(parent)
             parent = parent.parent
@@ -168,6 +169,7 @@ def generate_aliases(source_root, destination_root):
                 gitignore_entries.append(f"/{rel_path}")
 
                 py_file = rel_path.parent / (rel_path.name + ".py")
+                print("py_file", py_file)
                 if py_file in source_files:
                     raise HopsworksApigenError(
                         f"Cannot create package directory {d} for aliases because a module with the same name exists at {py_file}."
@@ -176,11 +178,13 @@ def generate_aliases(source_root, destination_root):
                 d.mkdir()
 
                 init_file = rel_path / "__init__.py"
+                print("init_file", init_file)
                 if init_file in source_files:
                     continue
 
                 (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
 
+        print("source_filepath", source_filepath)
         if source_filepath in source_files:
             if content != HopsworksApigenGriffe.MAGIC_COMMENT:
                 raise HopsworksApigenError(
