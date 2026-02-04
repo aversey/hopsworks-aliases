@@ -16,18 +16,20 @@
 
 from __future__ import annotations
 
-from typing import Callable, overload
+from typing import Callable, TypeVar, overload
 
 
 class PublicNames:
     nameOf: dict[object, str] = {}
 
 
+T = TypeVar("T")
+
 @overload
-def public(*paths: str) -> Callable[[object], object]: ...
+def public(*paths: str) -> Callable[[T], T]: ...
 @overload
-def public(symbol: object, /) -> object: ...
-def public(*paths: str | object):
+def public(symbol: T, /) -> T: ...
+def public(*paths: str | T) -> Callable[[T], T] | T:
     """Make a function or class publicly available, possibly via an alias.
 
     The first path (or the original path, if no paths are given) becomes the primary public import path.
@@ -75,7 +77,7 @@ def public(*paths: str | object):
     if len(paths) == 1 and not isinstance(paths[0], str):
         return paths[0]
 
-    def publicate(symbol: object):
+    def publicate(symbol: T) -> T:
         name = paths[0] if paths else ""
         if not isinstance(name, str):
             raise TypeError(

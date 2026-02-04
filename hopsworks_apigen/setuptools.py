@@ -175,14 +175,8 @@ def generate_aliases(source_root, destination_root):
                         f"Cannot create package directory {d} for aliases because a module with the same name exists at {py_file}."
                     )
 
-                d.mkdir()
-
-                init_file = rel_path / "__init__.py"
-                print("init_file", init_file)
-                if init_file in source_files:
-                    continue
-
-                (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
+            d.mkdir()
+            (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
 
         print("source_filepath", source_filepath)
         if source_filepath in source_files:
