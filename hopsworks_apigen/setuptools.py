@@ -84,6 +84,8 @@ def collect_aliases(root):
     aliases_by_module = defaultdict(list)
     for module in all_modules_to_scan:
         for member in module.members.values():
+            if isinstance(member, griffe.Alias):
+                continue
             ha = member.extra.get("hopsworks_apigen", {"aliases": []})
             for alias in ha["aliases"]:
                 aliases_by_module[alias["target_module"]].append(alias)

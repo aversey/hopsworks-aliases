@@ -113,8 +113,6 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
                 logger.warning("Failed to load module %r: %s", module_name, e)
                 continue
 
-            _remove_unresolvable_aliases(cast("griffe.Module", module))
-
             for submodule in self._walk_modules(cast("griffe.Module", module)):
                 for member in submodule.members.values():
                     if isinstance(member, griffe.Alias):
@@ -225,18 +223,3 @@ def _merge_nav(cfg_nav: list, section_title: str, nav_list: list) -> None:
                 cfg_nav[position] = {section_title: nav_list}
                 return
     cfg_nav.append({section_title: nav_list})
-
-
-def _remove_unresolvable_aliases(module: griffe.Module) -> None:
-    """Recursively remove aliases that cannot be resolved."""
-    to_remove = []
-    for name, member in module.members.items():
-        if isinstance(member, griffe.Alias):
-            try:
-                _ = member.target
-            except griffe.AliasResolutionError:
-                to_remove.append(name)
-        elif isinstance(member, griffe.Module):
-            _remove_unresolvable_aliases(member)
-    for name in to_remove:
-        del module.members[name]
