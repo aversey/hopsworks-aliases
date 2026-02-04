@@ -113,7 +113,11 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
                 logger.warning("Failed to load module %r: %s", module_name, e)
                 continue
 
-            for submodule in self._walk_modules(cast("griffe.Module", module)):
+            if not isinstance(module, griffe.Module):
+                logger.warning("Loaded object %r is not a module", module_name)
+                continue
+
+            for submodule in self._walk_modules(module):
                 for member in submodule.members.values():
                     logger.debug("Examining member %r", member)
                     if isinstance(member, griffe.Alias):
