@@ -108,7 +108,6 @@ def collect_managed(root):
     """
     managed = {}
     aliases_by_module, source_files = collect_aliases(root)
-    print(source_files)
     for target_module, alias_list in aliases_by_module.items():
         # Convert module path to file path
         module_file = root / target_module.replace(".", "/") / "__init__.py"
@@ -145,11 +144,11 @@ def collect_managed(root):
             # Add the assignment
             managed[module_file] += f"{alias_name} = {original_ref}\n"
 
-    return managed
+    return managed, source_files
 
 
 def generate_aliases(source_root, destination_root):
-    managed = collect_managed(source_root)
+    managed, source_files = collect_managed(source_root)
     gitignore_entries = []
 
     for filepath, content in managed.items():
@@ -166,9 +165,27 @@ def generate_aliases(source_root, destination_root):
             with contextlib.suppress(ValueError):
                 rel_path = d.relative_to(destination_root)
                 gitignore_entries.append(f"/{rel_path}")
+
+            py_file = d.parent / (d.name + ".py")
+            if py_file in source_files:
+                raise HopsworksApigenError(
+                    f"Cannot create package directory {d} for aliases because a module with the same name exists at {py_file}."
+                )
+
             d.mkdir()
+
+            init_file = d / "__init__.py"
+            if init_file in source_files:
+                continue
+
             (d / "__init__.py").write_text(HopsworksApigenGriffe.MAGIC_COMMENT)
 
+        if filepath in source_files:
+            if content != HopsworksApigenGriffe.MAGIC_COMMENT:
+                raise HopsworksApigenError(
+                    f"Cannot create alias file {filepath} because a source file with the same name exists."
+                )
+            continue
         filepath.write_text(content)
 
     # Generate single .gitignore at the root
