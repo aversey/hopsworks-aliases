@@ -88,7 +88,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
             docs_path = self._module_doc_path(module_path)
             content = self._module_markdown(module_path, object_paths)
 
-            logger.info("Documenting module %r at %s", module_path, docs_path)
+            logger.debug("Documenting module %r at %s", module_path, docs_path)
 
             file = File.generated(config, src_uri=docs_path, content=content)
             if file.src_uri in files.src_uris:
@@ -115,6 +115,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
 
             for submodule in self._walk_modules(cast("griffe.Module", module)):
                 for member in submodule.members.values():
+                    logger.debug("Examining member %r", member)
                     if isinstance(member, griffe.Alias):
                         continue
                     if isinstance(member, (griffe.Class, griffe.Function)):
