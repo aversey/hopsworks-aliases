@@ -61,6 +61,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
 
     nav: _NavNode
     objects_by_module: dict[str, list[tuple[str, int]]]  # (object_path, order)
+    root_modules: set[str]
 
     def on_config(self, config: MkDocsConfig) -> MkDocsConfig | None:
         """Ensure mkdocstrings is available."""
@@ -77,6 +78,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
 
         self.nav = _NavNode(title=self.config.nav_section_title)
         self.objects_by_module = {}
+        self.root_modules = set(self.config.modules)
         return None
 
     def on_files(self, files: Files, /, *, config: MkDocsConfig) -> None:
@@ -170,7 +172,10 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
     def _module_doc_path(self, module_path: str) -> str:
         """Compute the docs file path for a module."""
         parts = module_path.split(".")
-        return f"{self.config.api_root_uri}/{'/'.join(parts)}/index.md"
+        docpath = f"{self.config.api_root_uri}/{'/'.join(parts)}"
+        if module_path in self.root_modules:
+            return f"{docpath}/index.md"
+        return f"{docpath}.md"
 
     def _module_markdown(self, module_path: str, object_paths: list[str]) -> str:
         """Generate markdown content for a module's doc page."""
