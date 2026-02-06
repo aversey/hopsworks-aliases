@@ -70,8 +70,24 @@ def public(*paths: str | T, order: int = 0) -> Callable[[T], T] | T:
             pass
         ```
 
+        We can control the order in which entities appear on the module page:
+        ```python
+        @public(order=1)  # appears before entities with lower order
+        class ImportantClass:
+            pass
+
+        @public # order=0 by default, appears last
+        class LessImportantClass:
+            pass
+
+        @public # This will be showed before LessImportantClass and after ImportantClass, because each order is sorted alphabetically.
+        class AClass:
+            pass
+        ```
+
     Parameters:
         paths: The import paths under which the entity is publicly available, empty string means the current path.
+        order: Sorting order on the module documentation page. Higher values appear first, then alphabetically within the same order.
     """
     # The real effect takes place in hopsworks-apigen setuptools plugin.
     if len(paths) == 1 and not isinstance(paths[0], str):
