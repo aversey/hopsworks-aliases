@@ -170,7 +170,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
     def _module_doc_path(self, module_path: str) -> str:
         """Compute the docs file path for a module."""
         parts = module_path.split(".")
-        return f"{self.config.api_root_uri}/{'/'.join(parts)}.md"
+        return f"{self.config.api_root_uri}/{'/'.join(parts)}/index.md"
 
     def _module_markdown(self, module_path: str, object_paths: list[str]) -> str:
         """Generate markdown content for a module's doc page."""
