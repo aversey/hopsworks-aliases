@@ -106,12 +106,18 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
             extensions=griffe.Extensions(HopsworksApigenGriffe())
         )
 
+        modules = {}
         for module_name in self.config.modules:
             try:
-                module = loader.load(module_name)
+                modules[module_name] = loader.load(module_name)
             except griffe.AliasResolutionError as e:
                 logger.warning("Failed to load module %r: %s", module_name, e)
                 continue
+
+        loader.resolve_aliases()
+
+        for module_name in self.config.modules:
+            module = modules.get(module_name)
 
             if not isinstance(module, griffe.Module):
                 logger.warning("Loaded object %r is not a module", module_name)
