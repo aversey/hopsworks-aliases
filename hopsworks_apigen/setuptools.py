@@ -227,8 +227,6 @@ class build_aliases(Command):
 
         self.managed = generate_aliases(Path(), self.aliases_dir)
 
-        print(f"Generated: {self.managed.keys()}")
-
     def get_outputs(self) -> list[str]:
         """Return all files that are outputs of this command."""
         assert self.aliases_dir is not None
@@ -239,7 +237,6 @@ class build_aliases(Command):
         for filepath in self.managed:
             output_path = self.aliases_dir / filepath.relative_to(Path())
             outputs.append(str(output_path))
-            print(f"Declaring {output_path} as output of {filepath}")
 
         return outputs
 
@@ -253,7 +250,6 @@ class build_aliases(Command):
         for filepath in self.managed:
             output_path = self.aliases_dir / filepath.relative_to(Path())
             mapping[str(output_path)] = str(output_path)
-            print(f"Mapping generated file {filepath} to {output_path}")
 
         return mapping
 
@@ -289,8 +285,10 @@ class install_aliases(Command):
             dest_file.parent.mkdir(parents=True, exist_ok=True)
 
             # Copy the file
-            print(f"Copying alias file {src_file} to {dest_file}")
-            shutil.copy(src_file, dest_file)
+            if not dest_file.exists() or dest_file.read_text().startswith(
+                HopsworksApigenGriffe.MAGIC_COMMENT
+            ):
+                shutil.copy(src_file, dest_file)
 
 
 def finalize_distribution_options(dist: Distribution) -> None:
