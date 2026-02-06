@@ -26,10 +26,10 @@ class PublicNames:
 T = TypeVar("T")
 
 @overload
-def public(*paths: str) -> Callable[[T], T]: ...
+def public(*paths: str, order: int = 0) -> Callable[[T], T]: ...
 @overload
 def public(symbol: T, /) -> T: ...
-def public(*paths: str | T) -> Callable[[T], T] | T:
+def public(*paths: str | T, order: int = 0) -> Callable[[T], T] | T:
     """Make a function or class publicly available, possibly via an alias.
 
     The first path (or the original path, if no paths are given) becomes the primary public import path.

@@ -58,6 +58,7 @@ class HopsworksApigenGriffe(griffe.Extension):
             "is_public": False,
             "aliases": [],
             "deprecated": None,
+            "order": 0,
         }
 
         # Parse @deprecated
@@ -84,7 +85,8 @@ class HopsworksApigenGriffe(griffe.Extension):
         if publics:
             decoratable.extra["hopsworks_apigen"]["is_public"] = True
             decoratable.public = True
-            paths = _extract_paths(publics[0])
+            paths, order = _extract_public_info(publics[0])
+            decoratable.extra["hopsworks_apigen"]["order"] = order
             for target_module, alias_name in _parse_paths(paths):
                 decoratable.extra["hopsworks_apigen"]["aliases"].append(
                     {
@@ -146,6 +148,36 @@ def _extract_paths(decorator) -> list[str]:
             paths.append(arg.strip("'\""))
 
     return paths
+
+
+def _extract_public_info(decorator) -> tuple[list[str], int]:
+    """Parse a @public decorator and extract paths and order.
+
+    Returns (paths, order) tuple.
+    """
+    # @public without arguments (bare decorator)
+    if not isinstance(decorator.value, griffe.ExprCall):
+        return [], 0
+
+    expr = decorator.value
+
+    # Extract positional arguments (paths)
+    paths = []
+    for arg in expr.arguments:
+        if isinstance(arg, str):
+            paths.append(arg.strip("'\""))
+
+    # Extract order keyword argument
+    order = 0
+    for arg in expr.arguments:
+        if (
+            isinstance(arg, griffe.ExprKeyword)
+            and arg.name == "order"
+            and isinstance(arg.value, (int, str))
+        ):
+            order = int(arg.value) if isinstance(arg.value, str) else arg.value
+
+    return paths, order
 
 
 def _parse_paths(paths: list[str]) -> list[tuple[str, str]]:

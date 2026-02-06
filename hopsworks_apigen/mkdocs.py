@@ -60,7 +60,7 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
     """MkDocs plugin that documents modules containing @public entities."""
 
     nav: _NavNode
-    objects_by_module: dict[str, list[str]]
+    objects_by_module: dict[str, list[tuple[str, int]]]  # (object_path, order)
 
     def on_config(self, config: MkDocsConfig) -> MkDocsConfig | None:
         """Ensure mkdocstrings is available."""
@@ -84,7 +84,12 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
         self._collect_public_objects()
 
         for module_path in sorted(self.objects_by_module):
-            object_paths = sorted(self.objects_by_module[module_path])
+            # Sort by order descending, then alphabetically
+            sorted_objects = sorted(
+                self.objects_by_module[module_path],
+                key=lambda x: (-x[1], x[0]),
+            )
+            object_paths = [path for path, _ in sorted_objects]
             docs_path = self._module_doc_path(module_path)
             content = self._module_markdown(module_path, object_paths)
 
@@ -133,9 +138,10 @@ class HopsworksApigenMkDocs(BasePlugin[PluginConfig]):
                         if info and info["is_public"]:
                             primary_mod = self._primary_module(member)
                             object_path = f"{member.module.path}.{member.name}"
+                            order = info.get("order", 0)
                             if primary_mod not in self.objects_by_module:
                                 self.objects_by_module[primary_mod] = []
-                            self.objects_by_module[primary_mod].append(object_path)
+                            self.objects_by_module[primary_mod].append((object_path, order))
 
     def _walk_modules(self, module: griffe.Module) -> Iterator[griffe.Module]:
         """Recursively yield all modules."""
