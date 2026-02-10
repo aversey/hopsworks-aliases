@@ -7,7 +7,7 @@ By doing this, the package enables Hopsworks developers to change the API gradua
 
 ## Usage
 
-### Generation of Aliases
+### Generating Aliases
 
 If you want to generate an alias for a class or a function, firstly think if you can avoid doing it.
 In case you have to do it to maintain backwards-compatibility, you can use the `@also_available_as` decorator, which takes the new member path as an argument:
@@ -18,7 +18,7 @@ class RestAPIError(Exception):
     ...
 ```
 
-### Marking the Public API
+### Marking API Member as Public
 
 If you want to mark a class or a function as public, you can use the `@public` decorator:
 
