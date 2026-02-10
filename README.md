@@ -18,7 +18,7 @@ class RestAPIError(Exception):
     ...
 ```
 
-### Marking API Member as Public
+### Marking API Members as Public
 
 If you want to mark a class or a function as public, you can use the `@public` decorator:
 
