@@ -5,6 +5,67 @@ This project is a collection of plugins and extensions for building Hopsworks Py
 The main purpose of these extensions is to support a clear demarcation of the public API and its deprecated parts.
 By doing this, the package enables Hopsworks developers to change the API gradually, maintaining backward compatibility while steadily improving it.
 
+## Usage
+
+### Generation of Aliases
+
+If you want to generate an alias for a class or a function, firstly think if you can avoid doing it.
+In case you have to do it to maintain backwards-compatibility, you can use the `@also_available_as` decorator, which takes the new member path as an argument:
+
+```python
+@also_available_as("hopsworks.client.exceptions.RestAPIError")
+class RestAPIError(Exception):
+    ...
+```
+
+### Marking the Public API
+
+If you want to mark a class or a function as public, you can use the `@public` decorator:
+
+```python
+@public
+class FeatureGroup:
+    ...
+```
+
+You can also generate public aliases, which are mentioned in the docs.
+As with internal aliases, you should seriously think if you can avoid doing it; but if you have to do it to maintain backwards-compatibility, you can use the `@public` decorator with the paths of the aliases as arguments.
+In this case, the first path argument of `@public` is the canonical member path, and the rest are mentioned in a special "Aliases" section in the docs.
+The current path is to be marked as an empty string, `""`.
+
+```python
+# The canonical path is the current path, and two public aliases are created:
+@public("", "hopsworks.FeatureGroup", "hsfs.feature_group.FeatureGroup")
+class FeatureGroup:
+    ...
+
+# The canonical path is "hopsworks.RestAPIError", while the current path is hidden from the docs:
+@public("hopsworks.RestAPIError")
+class RestAPIError(Exception):
+    ...
+```
+
+### Deprecating API Members
+
+If you want to deprecate a function, you have to use `@deprecated` decorator, which takes the recommended alternative member paths as arguments.
+You should only use it on public members.
+Make sure to use `@deprecated` above `@public`, so that the correct meta-information is shown to the user in the deprecation warning.
+
+```python
+# Nothing should be removed in a patch release, so major.minor version is used to specify the release in which the method is to be removed.
+# Here we say that the users should use `isin` instead of `contains`, and that `contains` is to be removed in 5.0:
+@deprecated("hopsworks.Feature.isin", available_until="5.0")
+@public
+def contains(self, other: str | list[Any]) -> filter.Filter:
+    ...
+
+# In case we don't know yet the exact release in which the method is to be removed, we can omit it:
+@deprecated("hopsworks.Feature.isin")
+@public
+def contains(self, other: str | list[Any]) -> filter.Filter:
+    ...
+```
+
 ## Background
 
 Historically it so happened that in the Hopsworks Python API package, there was no clear distinction between the public API and the internal implementation.
